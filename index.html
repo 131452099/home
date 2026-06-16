@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人主页</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --accent:#7c5cfc;--accent-light:#a78bfa;--glass:rgba(255,255,255,0.12);
+  --glass-border:rgba(255,255,255,0.18);--text:#fff;--text-sub:rgba(255,255,255,0.7);
+  --radius:16px;--shadow:0 8px 32px rgba(0,0,0,0.25);
+}
+html,body{height:100%;overflow-x:hidden}
+body{
+  font-family:'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;
+  color:var(--text);background:#0a0a1a;
+}
+/* 背景 */
+#bg-layer{position:fixed;inset:0;z-index:0;background-size:cover;background-position:center;transition:opacity .8s}
+#bg-layer::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.4)}
+.bg-fade{animation:bgFade 1s ease}
+@keyframes bgFade{from{opacity:0}to{opacity:1}}
+
+/* 粒子 */
+.particles{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;background:rgba(255,255,255,0.25);animation:float linear infinite}
+@keyframes float{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) scale(1);opacity:0}}
+
+/* 主容器 */
+.main{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:40px 20px 20px}
+
+/* 卡片 */
+.card{
+  background:var(--glass);border:1px solid var(--glass-border);
+  border-radius:var(--radius);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  box-shadow:var(--shadow);transition:transform .3s,box-shadow .3s;
+}
+.card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,0.35)}
+
+/* 头像区 */
+.avatar-section{text-align:center;margin-bottom:24px}
+.avatar-wrap{width:120px;height:120px;border-radius:50%;padding:4px;background:linear-gradient(135deg,var(--accent),#ff6b6b);margin:0 auto 16px;animation:glow 3s ease-in-out infinite alternate}
+@keyframes glow{from{box-shadow:0 0 20px rgba(124,92,252,0.3)}to{box-shadow:0 0 40px rgba(124,92,252,0.6)}}
+.avatar-img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.2)}
+.user-name{font-size:1.6rem;font-weight:700;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,0.4)}
+.user-motto{font-size:.9rem;color:var(--text-sub);margin-top:6px}
+
+/* 时钟区 */
+.clock-section{font-size:2.8rem;font-weight:300;letter-spacing:4px;text-shadow:0 2px 12px rgba(124,92,252,0.5);margin:8px 0}
+.clock-date{font-size:.85rem;color:var(--text-sub);margin-bottom:4px}
+.clock-greeting{font-size:1.1rem;color:var(--accent-light);margin-bottom:16px}
+
+/* 天气 */
+.weather-bar{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--text-sub);margin-bottom:20px}
+.weather-bar i{font-size:1.1rem;color:var(--accent-light)}
+
+/* 标签页 */
+.tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;justify-content:center}
+.tab-btn{
+  padding:8px 20px;border-radius:24px;border:1px solid var(--glass-border);
+  background:var(--glass);color:var(--text-sub);cursor:pointer;font-size:.85rem;
+  transition:all .3s;backdrop-filter:blur(10px);outline:none;
+}
+.tab-btn:hover,.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 4px 15px rgba(124,92,252,0.4)}
+.tab-content{display:none;width:100%;max-width:640px;animation:fadeUp .4s ease}
+.tab-content.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* 关于卡片 */
+.about-card{padding:24px;line-height:1.8;font-size:.95rem;color:var(--text-sub)}
+.about-card p{margin-bottom:12px}
+.skill-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.skill-tag{padding:4px 14px;border-radius:20px;font-size:.8rem;background:rgba(124,92,252,0.2);color:var(--accent-light);border:1px solid rgba(124,92,252,0.3)}
+
+/* 联系方式 */
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.contact-item{
+  display:flex;align-items:center;gap:10px;padding:14px 16px;
+  cursor:pointer;transition:all .3s;text-decoration:none;color:var(--text-sub);
+  border-radius:12px;overflow:hidden;
+}
+.contact-item:hover{background:rgba(124,92,252,0.15);color:#fff}
+.contact-item i{font-size:1.3rem;width:28px;text-align:center}
+.contact-item span{font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+
+/* 网站展示 */
+.website-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.website-item{
+  display:flex;align-items:center;gap:12px;padding:14px 16px;
+  cursor:pointer;transition:all .3s;text-decoration:none;color:var(--text-sub);
+  border-radius:12px;overflow:hidden;
+}
+.website-item:hover{background:rgba(124,92,252,0.15);color:#fff}
+.website-item i{font-size:1.4rem;width:32px;text-align:center;color:var(--accent-light)}
+.website-item .ws-info{min-width:0;flex:1;overflow:hidden}
+.website-item .ws-label{font-size:.9rem;font-weight:500;display:block}
+.website-item .ws-link{font-size:.75rem;color:rgba(255,255,255,0.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+/* emoji 图标 */
+.icon-emoji{font-size:1.3rem;width:28px;text-align:center;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+/* 网站首字圆圈图标 */
+.ws-icon-circle{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.95rem;font-weight:700;color:#fff;
+  background:var(--accent);letter-spacing:0;
+}
+
+/* 留言 */
+.msg-form{padding:20px}
+.msg-textarea{width:100%;height:80px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.06);color:var(--text);padding:12px;resize:none;font-size:.9rem;outline:none;transition:border .3s}
+.msg-textarea:focus{border-color:var(--accent)}
+.msg-textarea::placeholder{color:rgba(255,255,255,0.3)}
+.msg-submit{
+  margin-top:10px;padding:8px 24px;border-radius:20px;border:none;
+  background:var(--accent);color:#fff;cursor:pointer;font-size:.85rem;transition:all .3s;
+}
+.msg-submit:hover{background:var(--accent-light);box-shadow:0 4px 15px rgba(124,92,252,0.4)}
+.msg-list{padding:0 20px 20px}
+.msg-item{padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:.85rem;color:var(--text-sub)}
+.msg-item:last-child{border-bottom:none}
+.msg-time{font-size:.75rem;color:rgba(255,255,255,0.3);margin-top:4px}
+
+/* 页脚 */
+footer{
+  text-align:center;padding:20px;font-size:.75rem;color:rgba(255,255,255,0.7);
+  max-width:640px;width:100%;margin-top:auto;
+}
+footer a{color:rgba(255,255,255,0.85);text-decoration:none;transition:color .3s}
+footer a:hover{color:var(--accent-light)}
+.footer-line{margin:4px 0}
+
+/* 管理入口 */
+.admin-entry{
+  position:fixed;bottom:20px;right:20px;z-index:10;width:40px;height:40px;
+  border-radius:50%;background:var(--glass);border:1px solid var(--glass-border);
+  color:var(--text-sub);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .3s;font-size:.9rem;text-decoration:none;
+  backdrop-filter:blur(10px);
+}
+.admin-entry:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* 音乐播放器 */
+.music-player{
+  position:fixed;bottom:20px;left:20px;z-index:10;display:none;align-items:center;gap:8px;
+  padding:8px 16px;border-radius:24px;background:var(--glass);border:1px solid var(--glass-border);
+  backdrop-filter:blur(10px);cursor:pointer;transition:all .3s;font-size:.8rem;color:var(--text-sub);
+}
+.music-player.visible{display:flex}
+.music-player:hover{background:rgba(124,92,252,0.2)}
+.music-disc{width:24px;height:24px;border-radius:50%;border:2px solid var(--accent-light);display:flex;align-items:center;justify-content:center}
+.music-disc.playing{animation:spin 3s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+/* 响应式 */
+@media(max-width:640px){
+  .clock-section{font-size:2rem}
+  .user-name{font-size:1.3rem}
+  .contact-grid{grid-template-columns:1fr}
+  .avatar-wrap{width:96px;height:96px}
+}
+
+/* 滚动条 */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--accent);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+
+<div id="bg-layer"></div>
+<div class="particles" id="particles"></div>
+
+<div class="main">
+  <!-- 头像 -->
+  <div class="avatar-section">
+    <div class="avatar-wrap">
+      <img class="avatar-img" id="avatar" src="" alt="avatar">
+    </div>
+    <div class="user-name" id="userName"></div>
+    <div class="user-motto" id="userMotto"></div>
+  </div>
+
+  <!-- 时钟 -->
+  <div class="clock-date" id="clockDate"></div>
+  <div class="clock-section" id="clockTime"></div>
+  <div class="clock-greeting" id="greeting"></div>
+
+  <!-- 天气占位 -->
+  <div class="weather-bar" id="weatherBar">
+    <span class="icon-emoji">⛅</span>
+    <span id="weatherText">加载天气中...</span>
+  </div>
+
+  <!-- 标签页 -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="about">关于</button>
+    <button class="tab-btn" data-tab="contact">联系</button>
+    <button class="tab-btn" data-tab="message">留言</button>
+    <button class="tab-btn" data-tab="websites">网站</button>
+  </div>
+
+  <!-- 关于 -->
+  <div class="tab-content active" id="tab-about">
+    <div class="card about-card">
+      <p id="aboutText"></p>
+      <div class="skill-tags" id="skillTags"></div>
+    </div>
+  </div>
+
+  <!-- 联系 -->
+  <div class="tab-content" id="tab-contact">
+    <div class="card">
+      <div class="contact-grid" id="contactGrid"></div>
+    </div>
+  </div>
+
+  <!-- 留言 -->
+  <div class="tab-content" id="tab-message">
+    <div class="card">
+      <div class="msg-form">
+        <textarea class="msg-textarea" id="msgInput" placeholder="说点什么吧..." maxlength="200"></textarea>
+        <button class="msg-submit" id="msgSubmit">发送</button>
+      </div>
+      <div class="msg-list" id="msgList"></div>
+    </div>
+  </div>
+
+  <!-- 网站 -->
+  <div class="tab-content" id="tab-websites">
+    <div class="card">
+      <div class="website-grid" id="websiteGrid"></div>
+    </div>
+  </div>
+
+  <!-- 页脚 -->
+  <footer id="footer"></footer>
+</div>
+
+<!-- 音乐播放器 -->
+<div class="music-player" id="musicPlayer" title="点击播放/暂停">
+  <div class="music-disc" id="musicDisc">
+    <span style="font-size:10px">🎵</span>
+  </div>
+  <span id="musicTitle">音乐</span>
+</div>
+
+<!-- 管理入口 -->
+<a href="admin.html" class="admin-entry" title="后台管理">⚙️</a>
+
+<script>
+// ========== 配置（从服务器加载，此对象为降级默认值）==========
+var DEFAULT_CONFIG = {
+  site: {
+    title: "个人主页",
+    bgApi: "https://www.dmoe.cc/random.php",
+    bgRefresh: 60,
+    accent: "#7c5cfc",
+    musicEnabled: true,
+    musicUrl: "__BUILTIN__",
+    musicTitle: "音乐",
+    weatherCity: "北京",
+    weatherLat: 39.9,
+    weatherLon: 116.4,
+    weatherAuto: false
+  },
+  user: {
+    name: "风栖十月",
+    avatar: "https://api.600060.xyz/acg",
+    motto: "热爱生活，热爱技术",
+    about: "一个热爱技术与创意的开发者，喜欢探索未知的世界。<br>在这里记录生活的点滴，分享技术的乐趣。",
+    skills: ["PHP","iOS","前端","服务器运维","API开发"]
+  },
+  contacts: [
+    { icon: "fab fa-qq", label: "QQ", value: "123456789", link: "" },
+    { icon: "fab fa-weixin", label: "微信", value: "WeChat_ID", link: "" },
+    { icon: "fas fa-envelope", label: "邮箱", value: "admin@600060.xyz", link: "mailto:admin@600060.xyz" },
+    { icon: "fab fa-github", label: "GitHub", value: "github.com/xxx", link: "https://github.com/xxx" },
+    { icon: "fab fa-bilibili", label: "B站", value: "B站UID", link: "" },
+    { icon: "fab fa-telegram", label: "Telegram", value: "@username", link: "" }
+  ],
+  websites: [
+    {label:"主页",icon:"fas fa-home",link:""},
+    {label:"博客",icon:"fas fa-blog",link:"https://blog.600060.xyz"},
+    {label:"图片CDN",icon:"fas fa-image",link:""},
+    {label:"域名二级分发",icon:"fas fa-sitemap",link:""},
+    {label:"工具",icon:"fas fa-tools",link:"https://tool.600060.xyz"},
+    {label:"表白墙",icon:"fas fa-heart",link:""},
+    {label:"测试",icon:"fas fa-vial",link:""}
+  ],
+  footer: {
+    copyright: "© 2026 风栖十月. All Rights Reserved.",
+    icp: "京ICP备XXXXXXXX号-1",
+    icpLink: "https://beian.miit.gov.cn/",
+    police: "",
+    policeLink: ""
+  }
+};
+
+// 当前配置（从服务器加载，降级时用 DEFAULT_CONFIG）
+var __config = null;
+
+// ========== API 加载配置 ==========
+// Makers 边缘函数路径（整个项目部署到 Makers 时使用）
+// 若前端部署在其他地方，改为完整 URL，如 'https://xxx.edgeone.run/api/config'
+var CONFIG_API = '/api/config';
+
+async function loadConfigFromServer() {
+  try {
+    var r = await fetch(CONFIG_API);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var cfg = await r.json();
+    // 自动补全缺失字段（兼容旧版 API 返回的数据）
+    var def = DEFAULT_CONFIG;
+    if (!cfg.site) cfg.site = def.site;
+    if (!cfg.user) cfg.user = def.user;
+    if (!cfg.contacts) cfg.contacts = def.contacts;
+    if (!cfg.websites || (Array.isArray(cfg.websites) && cfg.websites.length === 0)) {
+      if (cfg.socials && cfg.socials.length) cfg.websites = cfg.socials.map(function(s){return {label:'网站',icon:s.icon,link:s.link};});
+      else cfg.websites = def.websites;
+    }
+    if (!cfg.footer) cfg.footer = def.footer;
+    // 自动修复旧 musicUrl
+    var oldMusicUrls = ['', 'https://api.paugram.com/music/random', 'https://api.uomg.com/api/rand.music?sort=netease&format=json'];
+    if (oldMusicUrls.indexOf(cfg.site.musicUrl) > -1) {
+      cfg.site.musicEnabled = def.site.musicEnabled;
+      cfg.site.musicUrl = def.site.musicUrl;
+    }
+    __config = cfg;
+    return cfg;
+  } catch(e) {
+    console.warn('从服务器加载配置失败，使用默认配置', e);
+    __config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    return __config;
+  }
+}
+
+// ========== 获取当前配置 ==========
+function getConfig() {
+  return __config || DEFAULT_CONFIG;
+}
+
+// ========== 背景图片 ==========
+var bgTimer = null;
+var currentBgIndex = 0;
+
+function getBgApiList() {
+  var cfg = getConfig();
+  if (!cfg.site.bgApi) return [];
+  return cfg.site.bgApi.split('|').map(function(s) { return s.trim(); }).filter(Boolean);
+}
+
+function loadBackground() {
+  var bg = document.getElementById('bg-layer');
+  var apiList = getBgApiList();
+  if (apiList.length === 0) {
+    bg.style.background = 'linear-gradient(135deg, #0a0a2e, #1a0a3e, #2a1a4e)';
+    return;
+  }
+  var api = apiList[currentBgIndex % apiList.length];
+  currentBgIndex++;
+  var sep = api.includes('?') ? '&' : '?';
+  var url = api + sep + '_t=' + Date.now();
+  bg.style.backgroundImage = 'none';
+  void bg.offsetHeight;
+  bg.style.backgroundImage = 'url("' + url.replace(/"/g, '\\"') + '")';
+  bg.style.backgroundSize = 'cover';
+  bg.style.backgroundPosition = 'center center';
+  bg.style.backgroundRepeat = 'no-repeat';
+  var probe = new Image();
+  probe.onload = function() {};
+  probe.onerror = function() {
+    if (currentBgIndex < apiList.length) setTimeout(loadBackground, 500);
+  };
+  probe.src = url;
+}
+
+function startBgRefresh() {
+  var cfg = getConfig();
+  if (bgTimer) clearInterval(bgTimer);
+  if (cfg.site.bgRefresh > 0) {
+    bgTimer = setInterval(loadBackground, cfg.site.bgRefresh * 1000);
+  }
+}
+
+// ========== 粒子 ==========
+function createParticles() {
+  var c = document.getElementById('particles');
+  c.innerHTML = '';
+  for (var i = 0; i < 30; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    var size = Math.random() * 4 + 2;
+    p.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+Math.random()*100+'%;animation-duration:'+ (Math.random()*8+6)+'s;animation-delay:'+Math.random()*6+'s';
+    c.appendChild(p);
+  }
+}
+
+// ========== 时钟 ==========
+function updateClock() {
+  var now = new Date();
+  var h = String(now.getHours()).padStart(2,'0');
+  var m = String(now.getMinutes()).padStart(2,'0');
+  var s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clockTime').textContent = h + ':' + m + ':' + s;
+  var days = ['日','一','二','三','四','五','六'];
+  document.getElementById('clockDate').textContent = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 星期' + days[now.getDay()];
+  var hour = now.getHours();
+  var greet = '夜深了，注意休息 🌙';
+  if (hour >= 6 && hour < 9) greet = '早上好，新的一天开始了 ☀️';
+  else if (hour >= 9 && hour < 12) greet = '上午好，元气满满 💪';
+  else if (hour >= 12 && hour < 14) greet = '中午好，记得午休 🍱';
+  else if (hour >= 14 && hour < 18) greet = '下午好，继续加油 🔥';
+  else if (hour >= 18 && hour < 22) greet = '晚上好，辛苦了 🌆';
+  document.getElementById('greeting').textContent = greet;
+}
+
+// ========== 天气 ==========
+var WEATHER_CACHE_KEY = 'weather_location_cache';
+var WEATHER_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+function jsonpIpLocate(urlBase, parseFn, callback) {
+  var script = document.createElement('script');
+  var cbName = '_ipCb' + Date.now() + '_' + Math.random().toString(36).substr(2,4);
+  window[cbName] = function(data) {
+    delete window[cbName];
+    try { document.head.removeChild(script); } catch(e) {}
+    var loc = null;
+    try { loc = parseFn(data); } catch(e) {}
+    callback(null, loc);
+  };
+  script.onerror = function() {
+    delete window[cbName];
+    try { document.head.removeChild(script); } catch(e) {}
+    callback(new Error('network error'));
+  };
+  var timer = setTimeout(function() {
+    if (window[cbName]) {
+      delete window[cbName];
+      try { document.head.removeChild(script); } catch(e) {}
+      callback(new Error('timeout'));
+    }
+  }, 6000);
+  window.addEventListener('beforeunload', function cleanup() {
+    clearTimeout(timer);
+    delete window[cbName];
+    try { document.head.removeChild(script); } catch(e) {}
+    window.removeEventListener('beforeunload', cleanup);
+  });
+  script.src = urlBase + '?callback=' + encodeURIComponent(cbName);
+  document.head.appendChild(script);
+}
+
+function loadWeather() {
+  var el = document.getElementById('weatherText');
+  var cfg = getConfig();
+  if (cfg.site && cfg.site.weatherAuto) {
+    try {
+      var cacheStr = localStorage.getItem(WEATHER_CACHE_KEY);
+      if (cacheStr) {
+        var cache = JSON.parse(cacheStr);
+        if (cache.ts && (Date.now() - cache.ts < WEATHER_CACHE_TTL)) {
+          fetchWeather(cache.lat, cache.lon, cache.city, el);
+          return;
+        }
+      }
+    } catch(e) {}
+    el.textContent = '定位中...';
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(pos) { gotLocation({lat:pos.coords.latitude, lon:pos.coords.longitude, city:''}); },
+        function() { fallbackManual(); },
+        { timeout: 8000 }
+      );
+    } else {
+      fallbackManual();
+    }
+    return;
+  }
+  var lat = (cfg.site && cfg.site.weatherLat) ? cfg.site.weatherLat : 39.9;
+  var lon = (cfg.site && cfg.site.weatherLon) ? cfg.site.weatherLon : 116.4;
+  var city = (cfg.site && cfg.site.weatherCity) ? cfg.site.weatherCity : '北京';
+  fetchWeather(lat, lon, city, el);
+  function gotLocation(loc) {
+    try { localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({lat:loc.lat, lon:loc.lon, city:loc.city, ts:Date.now()})); } catch(e) {}
+    fetchWeather(loc.lat, loc.lon, loc.city, el);
+  }
+  function fallbackManual() {
+    var mlat = (cfg.site.weatherLat) ? cfg.site.weatherLat : 39.9;
+    var mlon = (cfg.site.weatherLon) ? cfg.site.weatherLon : 116.4;
+    var mcity = (cfg.site.weatherCity) ? cfg.site.weatherCity : '北京';
+    fetchWeather(mlat, mlon, mcity, el);
+  }
+}
+
+var WTTDescMap = {
+  'Sunny':'晴','Clear':'晴','Partly cloudy':'多云','Cloudy':'阴','Overcast':'阴天',
+  'Mist':'薄雾','Fog':'雾','Freezing fog':'冻雾',
+  'Light drizzle':'小毛毛雨','Light rain':'小雨','Moderate rain':'中雨','Heavy rain':'大雨','Light rain shower':'小阵雨','Heavy rain shower':'大阵雨',
+  'Light snow':'小雪','Moderate snow':'中雪','Heavy snow':'大雪','Light snow shower':'小阵雪','Heavy snow shower':'大阵雪',
+  'Thunderstorm':'雷暴','Thundery outbreaks possible':'可能雷暴',
+  'Patchy light drizzle':'零星小雨','Light sleet':'雨夹雪','Moderate or heavy sleet':'雨雪','Patchy light rain':'零星小雨',
+  'Blizzard':'暴风雪','Blowing snow':'风吹雪','Patchy snow possible':'可能小雪',
+  'Smoky haze':'霾','Haze':'霾','Mist':'薄雾','Freezing drizzle':'冻毛毛雨'
+};
+
+function fetchWeather(lat, lon, city, el) {
+  var displayCity = city || '当前位置';
+  el.textContent = displayCity + ' 天气加载中...';
+  fetch('https://wttr.in/' + lat + ',' + lon + '?format=j1')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d && d.current_condition && d.current_condition[0]) {
+        var c = d.current_condition[0];
+        var temp = c.temp_C;
+        var desc = (c.weatherDesc && c.weatherDesc[0] && c.weatherDesc[0].value) || '';
+        var descZh = WTTDescMap[desc] || desc || '未知';
+        el.textContent = displayCity + ' ' + descZh + ' ' + temp + '°C';
+      } else {
+        el.textContent = displayCity + ' 天气数据暂不可用';
+      }
+    })
+    .catch(function() {
+      el.textContent = displayCity + ' 天气数据暂不可用';
+    });
+}
+
+// ========== 主题色 ==========
+function applyAccent(hex){
+  document.documentElement.style.setProperty('--accent', hex);
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  var lr=Math.min(255,r+30),lg=Math.min(255,g+30),lb=Math.min(255,b+30);
+  var lightHex='#'+[lr,lg,lb].map(function(x){return x.toString(16).padStart(2,'0')}).join('');
+  document.documentElement.style.setProperty('--accent-light', lightHex);
+}
+
+// ========== 图标映射（Font Awesome → Emoji，零外部依赖）==========
+var ICON_EMOJI = {
+  'fab fa-qq':'🐧','fab fa-weixin':'💬','fas fa-envelope':'✉️',
+  'fab fa-github':'🐙','fab fa-bilibili':'📺','fab fa-telegram':'✈️',
+  'fab fa-discord':'🎮','fab fa-weibo':'📢','fab fa-twitter':'🐦',
+  'fab fa-instagram':'📷','fab fa-youtube':'▶️','fab fa-linkedin':'💼',
+  'fas fa-phone':'📱','fas fa-map-marker-alt':'📍','fas fa-link':'🔗',
+  'fas fa-globe':'🌍','fas fa-home':'🏠','fas fa-blog':'📝',
+  'fas fa-image':'🖼️','fas fa-sitemap':'🌐','fas fa-tools':'🔧',
+  'fas fa-heart':'❤️','fas fa-vial':'🧪','fas fa-code':'💻',
+  'fas fa-server':'🖥️','fas fa-database':'💾','fas fa-cloud':'☁️',
+  'fas fa-music':'🎵','fas fa-video':'🎬','fas fa-camera':'📷',
+  'fas fa-gamepad':'🎮','fas fa-shopping-cart':'🛒','fas fa-newspaper':'📰',
+  'fas fa-user':'👤','fas fa-star':'⭐','fas fa-book':'📖',
+  'fas fa-graduation-cap':'🎓','fas fa-paint-brush':'🎨','fas fa-chart-bar':'📊',
+  'fas fa-mobile-alt':'📱','fas fa-desktop':'🖥️','fas fa-wifi':'📶',
+  'fas fa-search':'🔍','fas fa-bell':'🔔','fas fa-calendar':'📅',
+  'fas fa-clock':'🕐','fas fa-flag':'🚩','fas fa-comment':'💬',
+  'fas fa-comments':'💬','fas fa-cog':'⚙️','fas fa-lock':'🔒',
+  'fas fa-shield-alt':'🛡️','fas fa-external-link-alt':'↗️',
+  'fas fa-sign-out-alt':'🚪','fas fa-save':'💾','fas fa-eye':'👁️',
+  'fas fa-undo':'↩️','fas fa-plus':'➕','fas fa-file-alt':'📄',
+  'fas fa-address-book':'📇'
+};
+
+function iconToEmoji(cls) {
+  if (ICON_EMOJI[cls]) return ICON_EMOJI[cls];
+  // 尝试从 FA class 名推断，如 "fas fa-download" → "📥"
+  var name = cls.replace(/^(fas|fab|far) fa-/, '');
+  var inferred = {
+    'download':'📥','upload':'📤','share':'📤','send':'📤',
+    'trash':'🗑️','edit':'✏️','copy':'📋','paste':'📋',
+    'check':'✅','times':'❌','exclamation':'⚠️','question':'❓',
+    'arrow-up':'⬆️','arrow-down':'⬇️','arrow-left':'⬅️','arrow-right':'➡️'
+  };
+  return inferred[name] || name.charAt(0).toUpperCase();
+}
+
+// ========== 渲染页面 ==========
+function renderPage() {
+  var cfg = getConfig();
+  applyAccent(cfg.site.accent || '#7c5cfc');
+  document.title = cfg.site.title;
+  document.getElementById('avatar').src = cfg.user.avatar;
+  document.getElementById('userName').textContent = cfg.user.name;
+  document.getElementById('userMotto').textContent = cfg.user.motto;
+  document.getElementById('aboutText').innerHTML = cfg.user.about;
+  var tagsEl = document.getElementById('skillTags');
+  tagsEl.innerHTML = '';
+  (cfg.user.skills || []).forEach(function(s) {
+    var t = document.createElement('span');
+    t.className = 'skill-tag';
+    t.textContent = s;
+    tagsEl.appendChild(t);
+  });
+  var grid = document.getElementById('contactGrid');
+  grid.innerHTML = '';
+  (cfg.contacts || []).forEach(function(c) {
+    var d = document.createElement('a');
+    d.className = 'contact-item card';
+    d.innerHTML = '<span class="icon-emoji">' + iconToEmoji(c.icon) + '</span><div><div style="font-size:.75rem;opacity:.6">' + c.label + '</div><span>' + c.value + '</span></div>';
+    if (c.link) d.href = c.link;
+    d.target = '_blank';
+    grid.appendChild(d);
+  });
+  var wGrid = document.getElementById('websiteGrid');
+  if (!cfg.websites || !cfg.websites.length) {
+    wGrid.innerHTML = '<div style="padding:12px;text-align:center;color:rgba(255,255,255,0.3);font-size:.85rem">暂无网站，请在后台添加</div>';
+  } else {
+    (cfg.websites || []).forEach(function(w) {
+      var a = document.createElement('a');
+      a.className = 'website-item card';
+      if(w.link) { a.href = w.link; a.target = '_blank'; }
+      else { a.href = 'javascript:void(0)'; a.onclick = function(e){e.preventDefault();}; }
+      var firstChar = (w.label || '?').charAt(0);
+      a.innerHTML = '<span class="ws-icon-circle">' + firstChar + '</span><div class="ws-info"><span class="ws-label">' + w.label + '</span>' + (w.link ? '<span class="ws-link">' + w.link.replace(/^https?:\/\//,'') + '</span>' : '') + '</div>';
+      wGrid.appendChild(a);
+    });
+  }
+  var ft = document.getElementById('footer');
+  var fhtml = '<div class="footer-line">' + cfg.footer.copyright + '</div>';
+  if (cfg.footer.icp) {
+    fhtml += '<div class="footer-line"><a href="' + (cfg.footer.icpLink||'#') + '" target="_blank">' + cfg.footer.icp + '</a></div>';
+  }
+  if (cfg.footer.police) {
+    fhtml += '<div class="footer-line"><a href="' + (cfg.footer.policeLink||'#') + '" target="_blank">' + cfg.footer.police + '</a></div>';
+  }
+  ft.innerHTML = fhtml;
+  var musicPlayerEl = document.getElementById('musicPlayer');
+  if(cfg.site.musicEnabled) {
+    musicPlayerEl.classList.add('visible');
+  } else {
+    musicPlayerEl.classList.remove('visible');
+  }
+  document.getElementById('musicTitle').textContent = cfg.site.musicTitle || '音乐';
+}
+
+// ========== 标签页 ==========
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ========== 留言 ==========
+function getMessages() {
+  try { return JSON.parse(localStorage.getItem('homepage_messages') || '[]'); }
+  catch(e) { return []; }
+}
+function saveMessages(msgs) { localStorage.setItem('homepage_messages', JSON.stringify(msgs)); }
+function renderMessages() {
+  var list = document.getElementById('msgList');
+  var msgs = getMessages();
+  if (!msgs.length) { list.innerHTML = '<div style="padding:12px;text-align:center;color:rgba(255,255,255,0.3);font-size:.85rem">还没有留言，来抢沙发~</div>'; return; }
+  list.innerHTML = msgs.map(function(m) { return '<div class="msg-item"><div>' + m.text + '</div><div class="msg-time">' + m.time + '</div></div>'; }).reverse().join('');
+}
+document.getElementById('msgSubmit').addEventListener('click', function() {
+  var input = document.getElementById('msgInput');
+  var text = input.value.trim();
+  if (!text) return;
+  var msgs = getMessages();
+  msgs.push({ text: text, time: new Date().toLocaleString('zh-CN') });
+  saveMessages(msgs);
+  input.value = '';
+  renderMessages();
+});
+
+// ========== 音乐 ==========
+var audioCtx = null, isPlaying = false;
+var musicPlayer = document.getElementById('musicPlayer');
+var musicDisc = document.getElementById('musicDisc');
+var audioEl = null;
+
+window.__builtinMusicList = [
+  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
+  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3'
+];
+
+function jsonpMusic(apiUrl, callback) {
+  var sep = apiUrl.indexOf('?') > -1 ? '&' : '?';
+  var cbName = '_mCB' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+  window[cbName] = function(data) {
+    delete window[cbName];
+    try { document.head.removeChild(script); } catch(e) {}
+    callback(null, data);
+  };
+  var script = document.createElement('script');
+  script.onerror = function() {
+    delete window[cbName];
+    try { document.head.removeChild(script); } catch(e) {}
+    callback(new Error('network'));
+  };
+  setTimeout(function() {
+    if (window[cbName]) {
+      delete window[cbName];
+      try { document.head.removeChild(script); } catch(e) {}
+      callback(new Error('timeout'));
+    }
+  }, 8000);
+  script.src = apiUrl + sep + 'callback=' + encodeURIComponent(cbName);
+  document.head.appendChild(script);
+}
+
+function extractMusicUrl(data) {
+  if (!data) return '';
+  if (data.results && data.results[0] && data.results[0].previewUrl) {
+    var idx = Math.floor(Math.random() * data.results.length);
+    return data.results[idx].previewUrl;
+  }
+  return (data.data && data.data.url) ? data.data.url : (data.url || '');
+}
+
+musicPlayer.addEventListener('click', function() {
+  var cfg = getConfig();
+  if (!cfg.site.musicEnabled) return;
+  if (!audioEl) {
+    var apiUrl = cfg.site.musicUrl || '';
+    if (!apiUrl) return;
+    if (apiUrl === '__BUILTIN__') {
+      var list = window.__builtinMusicList || [];
+      if (list.length > 0) {
+        var randIdx = Math.floor(Math.random() * list.length);
+        startPlay(list[randIdx]);
+      }
+      return;
+    }
+    fetch(apiUrl)
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        var ct = r.headers.get('content-type') || '';
+        if (ct.indexOf('audio') > -1 || ct.indexOf('mpeg') > -1) {
+          startPlay(apiUrl);
+          return null;
+        }
+        return r.json();
+      })
+      .then(function(data) {
+        if (!data) return;
+        var aUrl = extractMusicUrl(data);
+        if (aUrl) startPlay(aUrl);
+        else startPlay(apiUrl);
+      })
+      .catch(function() {
+        jsonpMusic(apiUrl, function(err, d) {
+          if (d) {
+            var aUrl = extractMusicUrl(d);
+            if (aUrl) { startPlay(aUrl); return; }
+          }
+          startPlay(apiUrl);
+        });
+      });
+    return;
+  } else if (isPlaying) {
+    audioEl.pause();
+    musicDisc.classList.remove('playing');
+    isPlaying = false;
+  } else {
+    audioEl.play().catch(function(){});
+    musicDisc.classList.add('playing');
+    isPlaying = true;
+  }
+  function startPlay(url) {
+    audioEl = new Audio(url);
+    audioEl.loop = true;
+    audioEl.play().catch(function(){});
+    musicDisc.classList.add('playing');
+    isPlaying = true;
+  }
+});
+
+// ========== 初始化 ==========
+(async function init() {
+  await loadConfigFromServer();
+  renderPage();
+  loadBackground();
+  startBgRefresh();
+  createParticles();
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadWeather();
+  renderMessages();
+})();
+</script>
+</body>
+</html>

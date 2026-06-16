@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>后台管理</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh}
+
+/* 登录页 */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;position:relative;z-index:1}
+.login-box{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:40px;width:360px;backdrop-filter:blur(20px)}
+.login-box h2{text-align:center;margin-bottom:24px;color:#a78bfa;font-weight:300;letter-spacing:2px}
+.login-input{width:100%;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#fff;font-size:.95rem;outline:none;margin-bottom:16px;transition:border .3s}
+.login-input:focus{border-color:#7c5cfc}
+.login-btn{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#7c5cfc,#a78bfa);color:#fff;font-size:1rem;cursor:pointer;transition:all .3s}
+.login-btn:hover{box-shadow:0 6px 20px rgba(124,92,252,0.4);transform:translateY(-1px)}
+.login-error{color:#ff6b6b;font-size:.85rem;text-align:center;margin-bottom:12px;display:none}
+
+/* 管理页 */
+.admin-wrap{display:none}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.topbar h2{font-weight:400;font-size:1.1rem;color:#a78bfa}
+.topbar-btns{display:flex;gap:10px}
+.topbar-btns a{color:#e0e0e0;font-size:.85rem;text-decoration:none;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);transition:all .3s}
+.topbar-btns a:hover{background:rgba(124,92,252,0.2);border-color:#7c5cfc}
+
+.content{display:flex;min-height:calc(100vh - 56px)}
+
+/* 侧边栏 */
+.sidebar{width:220px;border-right:1px solid rgba(255,255,255,0.06);padding:16px 0}
+.nav-item{padding:10px 24px;cursor:pointer;font-size:.9rem;color:rgba(255,255,255,0.5);transition:all .2s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.8)}
+.nav-item.active{color:#a78bfa;border-left-color:#7c5cfc;background:rgba(124,92,252,0.08)}
+.nav-item i{margin-right:8px;width:18px;text-align:center}
+
+/* 主内容 */
+.main-content{flex:1;padding:24px;overflow-y:auto;max-height:calc(100vh - 56px)}
+.section{display:none}
+.section.active{display:block}
+.section-title{font-size:1.1rem;color:#a78bfa;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06)}
+
+/* 表单 */
+.form-group{margin-bottom:20px}
+.form-label{display:block;font-size:.85rem;color:rgba(255,255,255,0.6);margin-bottom:6px}
+.form-input,.form-textarea{width:100%;max-width:600px;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:.9rem;outline:none;transition:border .3s;font-family:inherit}
+.form-input:focus,.form-textarea:focus{border-color:#7c5cfc}
+.form-textarea{min-height:100px;resize:vertical}
+.form-hint{font-size:.75rem;color:rgba(255,255,255,0.3);margin-top:4px}
+
+/* 列表项 */
+.list-item{display:flex;flex-direction:column;padding:16px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.06);margin-bottom:12px;gap:12px}
+.list-item .form-group{margin-bottom:10px}
+.list-item .form-input,.list-item .form-textarea{max-width:100%}
+.item-header{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:8px}
+.item-index{font-size:.8rem;color:#7c5cfc;background:rgba(124,92,252,0.15);padding:2px 10px;border-radius:12px}
+.btn-del{background:none;border:1px solid rgba(255,100,100,0.3);color:#ff6b6b;padding:4px 12px;border-radius:8px;font-size:.8rem;cursor:pointer;transition:all .3s}
+.btn-del:hover{background:rgba(255,100,100,0.1)}
+.item-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.item-fields .form-group{margin-bottom:6px}
+
+/* 按钮 */
+.btn-primary{padding:10px 28px;border-radius:10px;border:none;background:linear-gradient(135deg,#7c5cfc,#a78bfa);color:#fff;font-size:.9rem;cursor:pointer;transition:all .3s}
+.btn-primary:hover{box-shadow:0 4px 15px rgba(124,92,252,0.4)}
+.btn-secondary{padding:8px 20px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#e0e0e0;font-size:.85rem;cursor:pointer;transition:all .3s}
+.btn-secondary:hover{border-color:#7c5cfc;color:#a78bfa}
+.btn-group{display:flex;gap:12px;margin-top:20px}
+
+/* 技能标签 */
+.skill-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.skill-item{padding:4px 14px;border-radius:20px;font-size:.8rem;background:rgba(124,92,252,0.15);color:#a78bfa;border:1px solid rgba(124,92,252,0.3);display:flex;align-items:center;gap:6px}
+.skill-del{cursor:pointer;opacity:.6;transition:opacity .2s}
+.skill-del:hover{opacity:1}
+
+/* Toast */
+.toast{position:fixed;top:24px;right:24px;padding:12px 24px;border-radius:10px;background:#7c5cfc;color:#fff;font-size:.9rem;transform:translateX(120%);transition:transform .3s;z-index:999}
+.toast.show{transform:translateX(0)}
+
+@media(max-width:768px){
+  .content{flex-direction:column}
+  .sidebar{width:100%;border-right:none;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;overflow-x:auto;padding:8px}
+  .nav-item{border-left:none;border-bottom:3px solid transparent;padding:8px 16px;white-space:nowrap}
+  .nav-item.active{border-left-color:transparent;border-bottom-color:#7c5cfc}
+  .item-fields{grid-template-columns:1fr}
+}
+select option{background:#1a1a2e;color:#e0e0e0;padding:4px 8px}
+select{color:#fff}
+就业-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .2s}
+就业-card:hover{border-color:var(--c-accent,#7c5cfc)}
+就业-card.selected{border-color:var(--c-accent,#7c5cfc);background:rgba(124,92,252,0.12)}
+</style>
+</head>
+<body>
+<!-- 背景图 -->
+<div id="loginBgLayer" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;background:#0f0f1a;overflow:hidden">
+  <img id="loginBgImg" style="width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1s" onload="this.style.opacity=1">
+  <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45)"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- 登录 -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <h2>🛡️ 后台管理</h2>
+    <div class="login-error" id="loginError">密码错误</div>
+    <input type="password" class="login-input" id="loginPwd" placeholder="请输入管理密码">
+    <button class="login-btn" id="loginBtn">登 录</button>
+  </div>
+</div>
+
+<!-- 管理页 -->
+<div class="admin-wrap" id="adminWrap">
+  <div class="topbar">
+    <h2>⚙️ 网站后台管理</h2>
+    <div class="topbar-btns">
+      <a href="index.html" target="_blank">↗️ 预览</a>
+      <a href="javascript:void(0)" id="logoutBtn">🚪 退出</a>
+    </div>
+  </div>
+  <div class="content">
+    <div class="sidebar">
+      <div class="nav-item active" data-section="site">🌍 站点设置</div>
+      <div class="nav-item" data-section="user">👤 个人信息</div>
+      <div class="nav-item" data-section="contact">📇 联系方式</div>
+      <div class="nav-item" data-section="websites">🌐 网站展示</div>
+      <div class="nav-item" data-section="footer">📄 版权备案</div>
+      <div class="nav-item" data-section="password">🔒 修改密码</div>
+    </div>
+    <div class="main-content">
+
+      <!-- 站点设置 -->
+      <div class="section active" id="sec-site">
+        <div class="section-title">站点设置</div>
+        <div class="form-group">
+          <label class="form-label">站点标题</label>
+          <input type="text" class="form-input" id="cfg-title">
+        </div>
+        <div class="form-group">
+          <label class="form-label">背景图片 API 地址</label>
+          <input type="text" class="form-input" id="cfg-bgApi" placeholder="https://www.dmoe.cc/random.php">
+          <div class="form-hint">支持任意图片API（需直接返回图片或302跳转）。多个API用 | 分隔，自动轮询</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">背景刷新间隔（秒，0为不刷新）</label>
+          <input type="number" class="form-input" id="cfg-bgRefresh" value="60">
+        </div>
+        <div class="form-group">
+          <label class="form-label">主体颜色</label>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="color" id="cfg-accent" value="#7c5cfc" style="width:48px;height:36px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;background:none;cursor:pointer">
+            <input type="text" class="form-input" id="cfg-accentText" placeholder="#7c5cfc" style="max-width:140px">
+          </div>
+          <div class="form-hint">修改全站主题色，实时预览</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">音乐开关</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="cfg-musicEnabled"> 前台启用背景音乐
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">音乐接口地址（随机音乐）</label>
+          <input type="text" class="form-input" id="cfg-musicUrl" placeholder="__BUILTIN__（内置歌曲）或填写API地址">
+          <div class="form-hint">留空或填 __BUILTIN__ 则使用内置歌曲列表；填外部 API 地址（支持 CORS 或 JSONP）或直链 MP3 地址</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">音乐标题</label>
+          <input type="text" class="form-input" id="cfg-musicTitle" placeholder="音乐">
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="cfg-weatherAuto"> 根据IP自动定位（忽略下方手动设置）
+          </label>
+          <div class="form-hint">开启后，前台将根据访问者IP自动获取位置天气</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">天气城市名称（手动设置，自动定位时忽略）</label>
+          <input type="text" class="form-input" id="cfg-weatherCity" placeholder="北京">
+          <div class="form-hint">用于天气显示，如：北京、上海、深圳</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">天气纬度（Lat）</label>
+          <input type="number" step="0.01" class="form-input" id="cfg-weatherLat" placeholder="39.9">
+        </div>
+        <div class="form-group">
+          <label class="form-label">天气经度（Lon）</label>
+          <input type="number" step="0.01" class="form-input" id="cfg-weatherLon" placeholder="116.4">
+          <div class="form-hint">可在 https://map.open-meteo.com/ 查坐标</div>
+        </div>
+      </div>
+
+      <!-- 个人信息 -->
+      <div class="section" id="sec-user">
+        <div class="section-title">个人信息</div>
+        <div class="form-group">
+          <label class="form-label">昵称</label>
+          <input type="text" class="form-input" id="cfg-name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">头像地址</label>
+          <input type="text" class="form-input" id="cfg-avatar">
+          <div class="form-hint">填写图片URL，如 https://api.600060.xyz/acg</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">个性签名</label>
+          <input type="text" class="form-input" id="cfg-motto">
+        </div>
+        <div class="form-group">
+          <label class="form-label">个人简介（支持HTML）</label>
+          <textarea class="form-textarea" id="cfg-about"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">技能标签</label>
+          <div class="skill-list" id="skillList"></div>
+          <div style="display:flex;gap:8px;max-width:400px">
+            <input type="text" class="form-input" id="skillInput" placeholder="添加技能标签">
+            <button class="btn-secondary" id="addSkillBtn">添加</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 联系方式 -->
+      <div class="section" id="sec-contact">
+        <div class="section-title">联系方式</div>
+        <div id="contactList"></div>
+        <button class="btn-secondary" id="addContactBtn">➕ 添加联系方式</button>
+      </div>
+
+      <!-- 网站展示 -->
+      <div class="section" id="sec-websites">
+        <div class="section-title">网站展示</div>
+        <div id="websiteList"></div>
+        <button class="btn-secondary" id="addWebsiteBtn">➕ 添加网站</button>
+      </div>
+
+      <!-- 版权备案 -->
+      <div class="section" id="sec-footer">
+        <div class="section-title">版权备案</div>
+        <div class="form-group">
+          <label class="form-label">版权信息</label>
+          <input type="text" class="form-input" id="cfg-copyright">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ICP备案号</label>
+          <input type="text" class="form-input" id="cfg-icp">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ICP备案链接</label>
+          <input type="text" class="form-input" id="cfg-icpLink">
+        </div>
+        <div class="form-group">
+          <label class="form-label">公安备案号（选填）</label>
+          <input type="text" class="form-input" id="cfg-police">
+        </div>
+        <div class="form-group">
+          <label class="form-label">公安备案链接（选填）</label>
+          <input type="text" class="form-input" id="cfg-policeLink">
+        </div>
+      </div>
+
+      <!-- 修改密码 -->
+      <div class="section" id="sec-password">
+        <div class="section-title">修改密码</div>
+        <div class="form-group">
+          <label class="form-label">当前密码</label>
+          <input type="password" class="form-input" id="cfg-oldPwd">
+        </div>
+        <div class="form-group">
+          <label class="form-label">新密码</label>
+          <input type="password" class="form-input" id="cfg-newPwd">
+        </div>
+        <div class="form-group">
+          <label class="form-label">确认新密码</label>
+          <input type="password" class="form-input" id="cfg-newPwd2">
+        </div>
+        <button class="btn-primary" id="changePwdBtn">修改密码</button>
+      </div>
+
+      <!-- 保存按钮 -->
+      <div class="btn-group" style="position:sticky;bottom:0;padding:16px 0;background:#0f0f1a">
+        <button class="btn-primary" id="saveBtn">💾 保存所有设置</button>
+        <button class="btn-secondary" id="previewBtn">👁️ 保存并预览前台</button>
+        <button class="btn-secondary" id="resetBtn">↩️ 恢复默认</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== 登录页背景图（从服务器API读取 bgApi）==========
+async function loadLoginBg() {
+  var bgApi = 'https://www.dmoe.cc/random.php';
+  try {
+    var r = await fetch('/api/config');
+    var cfg = await r.json();
+    if (cfg && cfg.site && cfg.site.bgApi) bgApi = cfg.site.bgApi;
+  } catch(e) {}
+  var img = document.getElementById('loginBgImg');
+  if (!img) return;
+  img.style.opacity = 0;
+  img.src = bgApi + (bgApi.indexOf('?') > -1 ? '&' : '?') + '_t=' + Date.now();
+}
+document.addEventListener('DOMContentLoaded', loadLoginBg);
+
+// ========== API 调用 ==========
+// Makers 边缘函数路径（整个项目部署到 Makers 时使用）
+// 若前端部署在其他地方，改为完整 URL，如 'https://xxx.edgeone.run/api/config'
+var API = '/api/config';
+
+async function apiGetConfig() {
+  var r = await fetch(API);
+  if (!r.ok) {
+    var d = await r.json().catch(function(){});
+    throw new Error((d && d.error) || ('HTTP ' + r.status));
+  }
+  return await r.json();
+}
+
+async function apiVerifyPassword(pwd) {
+  try {
+    var r = await fetch(API, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({password: pwd})
+    });
+    if (!r.ok) return false;
+    var d = await r.json();
+    return !!d.valid;
+  } catch(e) {
+    return false;
+  }
+}
+
+async function apiSaveConfig(pwd, config, newPassword) {
+  var body = {password: pwd, config: config};
+  if (newPassword) body.newPassword = newPassword;
+  var r = await fetch(API, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  });
+  return await r.json();
+}
+
+// ========== 硬编码默认配置（API 失败时的降级）==========
+function getHardcodedDefault() {
+  return {
+    site:{title:"个人主页",bgApi:"https://www.dmoe.cc/random.php",bgRefresh:60,accent:"#7c5cfc",musicEnabled:true,musicUrl:"__BUILTIN__",musicTitle:"音乐",weatherCity:"北京",weatherLat:39.9,weatherLon:116.4,weatherAuto:false},
+    user:{name:"风栖十月",avatar:"https://api.600060.xyz/acg",motto:"热爱生活，热爱技术",about:"一个热爱技术与创意的开发者，喜欢探索未知的世界。<br>在这里记录生活的点滴，分享技术的乐趣。",skills:["PHP","iOS","前端","服务器运维","API开发"]},
+    contacts:[
+      {icon:"fab fa-qq",label:"QQ",value:"123456789",link:""},
+      {icon:"fab fa-weixin",label:"微信",value:"WeChat_ID",link:""},
+      {icon:"fas fa-envelope",label:"邮箱",value:"admin@600060.xyz",link:"mailto:admin@600060.xyz"},
+      {icon:"fab fa-github",label:"GitHub",value:"github.com/xxx",link:"https://github.com/xxx"},
+      {icon:"fab fa-bilibili",label:"B站",value:"B站UID",link:""},
+      {icon:"fab fa-telegram",label:"Telegram",value:"@username",link:""}
+    ],
+    websites:[
+      {label:"主页",icon:"fas fa-home",link:""},
+      {label:"博客",icon:"fas fa-blog",link:"https://blog.600060.xyz"},
+      {label:"图片CDN",icon:"fas fa-image",link:""},
+      {label:"域名二级分发",icon:"fas fa-sitemap",link:""},
+      {label:"工具",icon:"fas fa-tools",link:"https://tool.600060.xyz"},
+      {label:"表白墙",icon:"fas fa-heart",link:""},
+      {label:"测试",icon:"fas fa-vial",link:""}
+    ],
+    footer:{copyright:"© 2026 风栖十月. All Rights Reserved.",icp:"京ICP备XXXXXXXX号-1",icpLink:"https://beian.miit.gov.cn/",police:"",policeLink:""},
+    admin:{password:""}
+  };
+}
+
+// ========== 全局状态 ==========
+var _adminPwd = '';
+var _serverConfig = null;
+
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2500)}
+
+// ========== 登录 ==========
+var loginWrap=document.getElementById('loginWrap');
+var adminWrap=document.getElementById('adminWrap');
+
+async function checkLogin(){
+  var logged=sessionStorage.getItem('admin_logged');
+  if(logged==='1' && _adminPwd){
+    loginWrap.style.display='none';
+    adminWrap.style.display='block';
+    document.getElementById('loginBgLayer').style.display='none';
+    await loadConfigFromServer();
+  } else {
+    // 清除可能的过期 session
+    sessionStorage.removeItem('admin_logged');
+  }
+}
+
+document.getElementById('loginBtn').addEventListener('click',doLogin);
+document.getElementById('loginPwd').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin()});
+
+async function doLogin(){
+  var pwd=document.getElementById('loginPwd').value;
+  if(!pwd){showToast('请输入密码');return}
+  try{
+    var valid=await apiVerifyPassword(pwd);
+    if(valid){
+      _adminPwd=pwd;
+      sessionStorage.setItem('admin_logged','1');
+      loginWrap.style.display='none';
+      adminWrap.style.display='block';
+      document.getElementById('loginBgLayer').style.display='none';
+      await loadConfigFromServer();
+    }else{
+      document.getElementById('loginError').style.display='block';
+      document.getElementById('loginPwd').value='';
+    }
+  }catch(e){
+    document.getElementById('loginError').textContent='无法连接服务器，请检查 /api/config 边缘函数是否正常部署';
+    document.getElementById('loginError').style.display='block';
+  }
+}
+
+document.getElementById('logoutBtn').addEventListener('click',function(){
+  _adminPwd='';
+  _serverConfig=null;
+  sessionStorage.removeItem('admin_logged');
+  loginWrap.style.display='flex';
+  adminWrap.style.display='none';
+  document.getElementById('loginBgLayer').style.display='block';
+  loadLoginBg();
+  document.getElementById('loginPwd').value='';
+  document.getElementById('loginError').style.display='none';
+  document.getElementById('loginError').textContent='密码错误';
+});
+
+// ========== 加载服务器配置 ==========
+async function loadConfigFromServer(){
+  try{
+    _serverConfig=await apiGetConfig();
+    loadConfigToForm(_serverConfig);
+  }catch(e){
+    showToast('加载服务器配置失败，使用本地默认配置');
+    _serverConfig=getHardcodedDefault();
+    loadConfigToForm(_serverConfig);
+  }
+}
+
+// ========== 把配置渲染到表单 ==========
+function loadConfigToForm(cfg){
+  document.getElementById('cfg-title').value=cfg.site.title||'';
+  document.getElementById('cfg-bgApi').value=cfg.site.bgApi||'';
+  document.getElementById('cfg-bgRefresh').value=cfg.site.bgRefresh||0;
+  document.getElementById('cfg-accent').value=cfg.site.accent||'#7c5cfc';
+  document.getElementById('cfg-accentText').value=cfg.site.accent||'#7c5cfc';
+  document.getElementById('cfg-musicEnabled').checked=!!cfg.site.musicEnabled;
+  document.getElementById('cfg-musicUrl').value=cfg.site.musicUrl||'';
+  document.getElementById('cfg-musicTitle').value=cfg.site.musicTitle||'';
+  document.getElementById('cfg-weatherAuto').checked=!!cfg.site.weatherAuto;
+  document.getElementById('cfg-weatherCity').value=cfg.site.weatherCity||'北京';
+  document.getElementById('cfg-weatherLat').value=cfg.site.weatherLat||39.9;
+  document.getElementById('cfg-weatherLon').value=cfg.site.weatherLon||116.4;
+  document.getElementById('cfg-name').value=cfg.user.name||'';
+  document.getElementById('cfg-avatar').value=cfg.user.avatar||'';
+  document.getElementById('cfg-motto').value=cfg.user.motto||'';
+  document.getElementById('cfg-about').value=cfg.user.about||'';
+  document.getElementById('cfg-copyright').value=cfg.footer.copyright||'';
+  document.getElementById('cfg-icp').value=cfg.footer.icp||'';
+  document.getElementById('cfg-icpLink').value=cfg.footer.icpLink||'';
+  document.getElementById('cfg-police').value=cfg.footer.police||'';
+  document.getElementById('cfg-policeLink').value=cfg.footer.policeLink||'';
+  renderSkills(cfg.user.skills||[]);
+  renderContacts(cfg.contacts||[]);
+  if(!cfg.websites){
+    if(cfg.socials) cfg.websites=cfg.socials.map(function(s){return {label:'网站',icon:s.icon,link:s.link};});
+    else cfg.websites=[];
+  }
+  renderWebsites(cfg.websites||[]);
+}
+
+// ========== 导航 ==========
+document.querySelectorAll('.nav-item').forEach(function(n){
+  n.addEventListener('click',function(){
+    document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('active')});
+    document.querySelectorAll('.section').forEach(function(x){x.classList.remove('active')});
+    n.classList.add('active');
+    document.getElementById('sec-'+n.dataset.section).classList.add('active');
+  });
+});
+
+// ========== 技能标签 ==========
+var currentSkills=[];
+function renderSkills(skills){
+  currentSkills=skills.slice();
+  var el=document.getElementById('skillList');
+  el.innerHTML=currentSkills.map(function(s,i){return '<span class="skill-item">'+s+' <span class="skill-del" onclick="removeSkill('+i+')">&times;</span></span>'}).join('');
+}
+window.removeSkill=function(i){currentSkills.splice(i,1);renderSkills(currentSkills)};
+document.getElementById('addSkillBtn').addEventListener('click',function(){
+  var v=document.getElementById('skillInput').value.trim();
+  if(v){currentSkills.push(v);renderSkills(currentSkills);document.getElementById('skillInput').value='';}
+});
+document.getElementById('skillInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();document.getElementById('addSkillBtn').click()}});
+
+// ========== 联系方式 ==========
+var currentContacts=[];
+var ICON_OPTIONS=[
+  {emoji:'🏠',label:'主页',fa:'fas fa-home'},{emoji:'📝',label:'博客',fa:'fas fa-blog'},
+  {emoji:'🖼️',label:'图片',fa:'fas fa-image'},{emoji:'🌐',label:'站点',fa:'fas fa-sitemap'},
+  {emoji:'🔧',label:'工具',fa:'fas fa-tools'},{emoji:'❤️',label:'爱心',fa:'fas fa-heart'},
+  {emoji:'🧪',label:'测试',fa:'fas fa-vial'},{emoji:'🌍',label:'地球',fa:'fas fa-globe'},
+  {emoji:'🔗',label:'链接',fa:'fas fa-link'},{emoji:'💻',label:'代码',fa:'fas fa-code'},
+  {emoji:'🖥️',label:'服务器',fa:'fas fa-server'},{emoji:'💾',label:'数据库',fa:'fas fa-database'},
+  {emoji:'☁️',label:'云',fa:'fas fa-cloud'},{emoji:'🎵',label:'音乐',fa:'fas fa-music'},
+  {emoji:'🎬',label:'视频',fa:'fas fa-video'},{emoji:'📷',label:'相机',fa:'fas fa-camera'},
+  {emoji:'🎮',label:'游戏',fa:'fas fa-gamepad'},{emoji:'🛒',label:'购物',fa:'fas fa-shopping-cart'},
+  {emoji:'📰',label:'新闻',fa:'fas fa-newspaper'},{emoji:'📱',label:'手机',fa:'fas fa-phone'},
+  {emoji:'📍',label:'位置',fa:'fas fa-map-marker-alt'},{emoji:'✉️',label:'邮箱',fa:'fas fa-envelope'},
+  {emoji:'⚙️',label:'设置',fa:'fas fa-cog'},{emoji:'👤',label:'用户',fa:'fas fa-user'},
+  {emoji:'💬',label:'评论',fa:'fas fa-comment'},{emoji:'⭐',label:'星标',fa:'fas fa-star'},
+  {emoji:'📖',label:'书本',fa:'fas fa-book'},{emoji:'🎓',label:'学位',fa:'fas fa-graduation-cap'},
+  {emoji:'🎨',label:'画笔',fa:'fas fa-paint-brush'},{emoji:'📊',label:'图表',fa:'fas fa-chart-bar'},
+  {emoji:'🐧',label:'QQ',fa:'fab fa-qq'},{emoji:'💬',label:'微信',fa:'fab fa-weixin'},
+  {emoji:'🐙',label:'GitHub',fa:'fab fa-github'},{emoji:'📺',label:'B站',fa:'fab fa-bilibili'},
+  {emoji:'✈️',label:'Telegram',fa:'fab fa-telegram'},{emoji:'🎮',label:'Discord',fa:'fab fa-discord'},
+  {emoji:'📢',label:'微博',fa:'fab fa-weibo'},{emoji:'🐦',label:'Twitter',fa:'fab fa-twitter'},
+  {emoji:'📷',label:'Instagram',fa:'fab fa-instagram'},{emoji:'▶️',label:'YouTube',fa:'fab fa-youtube'},
+  {emoji:'💼',label:'LinkedIn',fa:'fab fa-linkedin'}
+];
+
+function iconSelect(id,selected){
+  return '<select class="form-input" id="'+id+'" style="max-width:100%">'+ICON_OPTIONS.map(function(i){return '<option value="'+i.fa+'"'+(i.fa===selected?' selected':'')+'>'+i.emoji+' '+i.label+'</option>'}).join('')+'</select>';
+}
+
+function renderContacts(contacts){
+  currentContacts=contacts.slice();
+  var el=document.getElementById('contactList');
+  el.innerHTML=currentContacts.map(function(c,i){
+    return '<div class="list-item">'+
+      '<div class="item-header"><span class="item-index">#'+(i+1)+'</span><button class="btn-del" onclick="removeContact('+i+')">删除</button></div>'+
+      '<div class="item-fields">'+
+        '<div class="form-group"><label class="form-label">图标</label>'+iconSelect('ct-icon-'+i,c.icon)+'</div>'+
+        '<div class="form-group"><label class="form-label">标签</label><input class="form-input" id="ct-label-'+i+'" value="'+c.label+'"></div>'+
+        '<div class="form-group"><label class="form-label">值</label><input class="form-input" id="ct-value-'+i+'" value="'+c.value+'"></div>'+
+        '<div class="form-group"><label class="form-label">链接（选填）</label><input class="form-input" id="ct-link-'+i+'" value="'+(c.link||'')+'"></div>'+
+      '</div>'+
+    '</div>'
+  }).join('');
+}
+window.removeContact=function(i){currentContacts.splice(i,1);renderContacts(currentContacts)};
+document.getElementById('addContactBtn').addEventListener('click',function(){
+  currentContacts.push({icon:'fas fa-link',label:'新联系',value:'',link:''});
+  renderContacts(currentContacts);
+});
+
+// ========== 网站展示 ==========
+var currentWebsites=[];
+function renderWebsites(websites){
+  if(!websites)return;
+  currentWebsites=websites.slice();
+  var el=document.getElementById('websiteList');
+  if(!websites.length){el.innerHTML='<div style="padding:16px;text-align:center;color:rgba(255,255,255,0.3);font-size:.85rem">暂无网站，请点击下方「添加网站」按钮</div>';return;}
+  el.innerHTML=websites.map(function(s,i){
+    return '<div class="list-item">'+
+      '<div class="item-header"><span class="item-index">#'+(i+1)+'</span><button class="btn-del" onclick="removeWebsite('+i+')">删除</button></div>'+
+      '<div class="item-fields">'+
+        '<div class="form-group"><label class="form-label">标签</label><input class="form-input" id="ws-label-'+i+'" value="'+s.label+'"></div>'+
+        '<div class="form-group"><label class="form-label">图标</label>'+iconSelect('ws-icon-'+i,s.icon)+'</div>'+
+        '<div class="form-group"><label class="form-label">链接</label><input class="form-input" id="ws-link-'+i+'" value="'+(s.link||'')+'"></div>'+
+      '</div>'+
+    '</div>'
+  }).join('');
+}
+window.removeWebsite=function(i){currentWebsites.splice(i,1);renderWebsites(currentWebsites)};
+document.getElementById('addWebsiteBtn').addEventListener('click',function(){
+  currentWebsites.push({label:'新网站',icon:'fas fa-globe',link:''});
+  renderWebsites(currentWebsites);
+});
+
+// ========== 收集表单数据 ==========
+function collectConfig(){
+  var cfg={
+    site:{
+      title:document.getElementById('cfg-title').value,
+      bgApi:document.getElementById('cfg-bgApi').value,
+      bgRefresh:parseInt(document.getElementById('cfg-bgRefresh').value)||0,
+      accent:document.getElementById('cfg-accentText').value||'#7c5cfc',
+      musicEnabled:document.getElementById('cfg-musicEnabled').checked,
+      musicUrl:document.getElementById('cfg-musicUrl').value,
+      musicTitle:document.getElementById('cfg-musicTitle').value,
+      weatherAuto:document.getElementById('cfg-weatherAuto').checked,
+      weatherCity:document.getElementById('cfg-weatherCity').value||'北京',
+      weatherLat:parseFloat(document.getElementById('cfg-weatherLat').value)||39.9,
+      weatherLon:parseFloat(document.getElementById('cfg-weatherLon').value)||116.4
+    },
+    user:{
+      name:document.getElementById('cfg-name').value,
+      avatar:document.getElementById('cfg-avatar').value,
+      motto:document.getElementById('cfg-motto').value,
+      about:document.getElementById('cfg-about').value,
+      skills:currentSkills
+    },
+    contacts:currentContacts.map(function(c,i){return{
+      icon:document.getElementById('ct-icon-'+i).value,
+      label:document.getElementById('ct-label-'+i).value,
+      value:document.getElementById('ct-value-'+i).value,
+      link:document.getElementById('ct-link-'+i).value
+    }}),
+    websites:currentWebsites.map(function(s,i){return{
+      label:document.getElementById('ws-label-'+i).value,
+      icon:document.getElementById('ws-icon-'+i).value,
+      link:document.getElementById('ws-link-'+i).value
+    }}),
+    footer:{
+      copyright:document.getElementById('cfg-copyright').value,
+      icp:document.getElementById('cfg-icp').value,
+      icpLink:document.getElementById('cfg-icpLink').value,
+      police:document.getElementById('cfg-police').value,
+      policeLink:document.getElementById('cfg-policeLink').value
+    },
+    admin:{}
+  };
+  return cfg;
+}
+
+// ========== 保存 ==========
+document.getElementById('saveBtn').addEventListener('click',async function(){
+  var cfg=collectConfig();
+  try{
+    var result=await apiSaveConfig(_adminPwd,cfg);
+    if(result.success){
+      showToast('✓ 保存成功！前台将自动更新');
+      _serverConfig=cfg;
+    }else{
+      showToast('保存失败：'+(result.error||'未知错误'));
+    }
+  }catch(e){
+    showToast('网络错误，保存失败');
+  }
+});
+
+// ========== 保存并预览 ==========
+document.getElementById('previewBtn').addEventListener('click',async function(){
+  var cfg=collectConfig();
+  try{
+    var result=await apiSaveConfig(_adminPwd,cfg);
+    if(result.success){
+      _serverConfig=cfg;
+      var frontUrl=location.href.replace('admin.html','index.html').replace(/\/admin\.html.*/, '/index.html');
+      window.open(frontUrl,'homepage_front');
+      showToast('✓ 保存成功！已打开前台预览');
+    }else{
+      showToast('保存失败：'+(result.error||'未知错误'));
+    }
+  }catch(e){
+    showToast('网络错误，保存失败');
+  }
+});
+
+// ========== 恢复默认 ==========
+document.getElementById('resetBtn').addEventListener('click',async function(){
+  if(!confirm('确定恢复默认设置？所有自定义内容将丢失。'))return;
+  var def=getHardcodedDefault();
+  try{
+    var result=await apiSaveConfig(_adminPwd,def);
+    if(result.success){
+      _serverConfig=def;
+      loadConfigToForm(def);
+      showToast('已恢复默认设置');
+    }else{
+      showToast('恢复失败：'+(result.error||'未知错误'));
+    }
+  }catch(e){
+    showToast('网络错误，恢复失败');
+  }
+});
+
+// ========== 修改密码 ==========
+document.getElementById('changePwdBtn').addEventListener('click',async function(){
+  var oldPwd=document.getElementById('cfg-oldPwd').value;
+  var newPwd=document.getElementById('cfg-newPwd').value;
+  var newPwd2=document.getElementById('cfg-newPwd2').value;
+  if(oldPwd!==_adminPwd){showToast('当前密码错误');return;}
+  if(!newPwd){showToast('新密码不能为空');return;}
+  if(newPwd!==newPwd2){showToast('两次密码不一致');return;}
+  try{
+    var cfg=collectConfig();
+    var result=await apiSaveConfig(oldPwd,cfg,newPwd);
+    if(result.success){
+      _adminPwd=newPwd;
+      showToast('✓ 密码修改成功');
+      document.getElementById('cfg-oldPwd').value='';
+      document.getElementById('cfg-newPwd').value='';
+      document.getElementById('cfg-newPwd2').value='';
+    }else{
+      showToast('密码修改失败：'+(result.error||'未知错误'));
+    }
+  }catch(e){
+    showToast('网络错误，密码修改失败');
+  }
+});
+
+// ========== 初始化 ==========
+checkLogin();
+// 颜色选择器同步
+(function(){
+  var cp=document.getElementById('cfg-accent');
+  var ct=document.getElementById('cfg-accentText');
+  if(cp&&ct){
+    cp.addEventListener('input',function(){ct.value=cp.value});
+    ct.addEventListener('input',function(){if(/^#[0-9a-fA-F]{6}$/.test(ct.value))cp.value=ct.value});
+  }
+})();
+</script>
+</body>
+</html>
