@@ -17,8 +17,20 @@
 export async function onRequestGet(context) {
   const { env } = context;
   const kv = env.HOME_KV;
+
+  // 调试模式：?debug=env 返回 env 对象的所有 key
+  const url = new URL(context.request.url);
+  if (url.searchParams.get('debug') === 'env') {
+    return jsonResponse({
+      envKeys: Object.keys(env),
+      hasHomeKv: !!env.HOME_KV,
+      homeKvType: env.HOME_KV ? typeof env.HOME_KV : undefined,
+      allEnv: Object.fromEntries(Object.keys(env).map(k => [k, String(env[k]).substring(0, 50)]))
+    });
+  }
+
   if (!kv) {
-    return jsonResponse({ error: 'KV_NOT_BOUND', hint: '请在项目设置中绑定 KV 命名空间，变量名：HOME_KV' }, 500);
+    return jsonResponse({ error: 'KV_NOT_BOUND', hint: '请在项目设置中绑定 KV 命名空间，变量名：HOME_KV', envKeys: Object.keys(env) }, 500);
   }
 
   const raw = await kv.get('homepage_config');
