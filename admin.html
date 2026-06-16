@@ -327,11 +327,12 @@ async function apiVerifyPassword(pwd) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({password: pwd})
     });
-    if (!r.ok) return false;
     var d = await r.json();
-    return !!d.valid;
+    if (d.valid) return {valid:true};
+    // 返回详细错误信息供调试
+    return {valid:false, error:d.error||'未知错误', debug:d._debug||null};
   } catch(e) {
-    return false;
+    return {valid:false, error:'网络异常'};
   }
 }
 
@@ -403,8 +404,8 @@ async function doLogin(){
   var pwd=document.getElementById('loginPwd').value;
   if(!pwd){showToast('请输入密码');return}
   try{
-    var valid=await apiVerifyPassword(pwd);
-    if(valid){
+    var result=await apiVerifyPassword(pwd);
+    if(result.valid){
       _adminPwd=pwd;
       sessionStorage.setItem('admin_logged','1');
       loginWrap.style.display='none';
@@ -412,11 +413,16 @@ async function doLogin(){
       document.getElementById('loginBgLayer').style.display='none';
       await loadConfigFromServer();
     }else{
-      document.getElementById('loginError').style.display='block';
+      var errEl=document.getElementById('loginError');
+      var msg='密码错误';
+      if(result.error && result.error!=='INVALID_PASSWORD') msg=result.error;
+      if(result.debug) msg+=' (调试: '+JSON.stringify(result.debug)+')';
+      errEl.textContent=msg;
+      errEl.style.display='block';
       document.getElementById('loginPwd').value='';
     }
   }catch(e){
-    document.getElementById('loginError').textContent='无法连接服务器，请检查 /api/config 边缘函数是否正常部署';
+    document.getElementById('loginError').textContent='无法连接服务器：'+e.message;
     document.getElementById('loginError').style.display='block';
   }
 }

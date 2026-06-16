@@ -39,51 +39,64 @@ export async function onRequestGet(context) {
 export async function onRequestPost(context) {
   const { request, env } = context;
   const kv = env.HOME_KV;
+
+  // 先检查 KV 是否绑定
   if (!kv) {
-    return jsonResponse({ error: 'KV_NOT_BOUND' }, 500);
+    return jsonResponse({ valid: false, error: 'KV_NOT_BOUND', hint: '请在 Makers 项目设置中绑定 KV 命名空间，变量名：HOME_KV' });
   }
 
   let body;
   try {
     body = await request.json();
   } catch (e) {
-    return jsonResponse({ error: 'INVALID_JSON' }, 400);
+    return jsonResponse({ valid: false, error: 'INVALID_JSON' });
   }
 
   const { password, config } = body;
 
   if (!password) {
-    return jsonResponse({ error: 'PASSWORD_REQUIRED' }, 401);
+    return jsonResponse({ valid: false, error: 'PASSWORD_REQUIRED' });
   }
 
-  // 验证密码
-  const valid = await verifyPassword(kv, password);
-  if (!valid) {
-    return jsonResponse({ valid: false, error: 'INVALID_PASSWORD' }, 401);
+  // 获取存储的密码哈希
+  const storedHash = (await kv.get('config_password') || '').trim();
+
+  // 场景1：KV 中没有设置密码 → admin123 可直接通过（首次初始化）
+  if (!storedHash && password === 'admin123') {
+    if (!config) return jsonResponse({ valid: true, _debug: '首次使用，admin123 直接通过' });
+    return await saveConfig(kv, body);
   }
 
-  // 仅验证密码（不传 config）
-  if (!config) {
-    return jsonResponse({ valid: true });
+  // 场景2：正常验证 SHA-256
+  const inputHash = await sha256(password);
+  if (inputHash !== storedHash) {
+    return jsonResponse({
+      valid: false,
+      error: 'INVALID_PASSWORD',
+      _debug: { hasStoredHash: !!storedHash, inputPrefix: inputHash.substring(0, 8) + '...', storedPrefix: storedHash ? storedHash.substring(0, 8) + '...' : '(空)' }
+    });
   }
 
-  // 保存配置（含可选密码修改）
+  // 密码正确 → 仅验证或保存配置
+  if (!config) return jsonResponse({ valid: true });
+  return await saveConfig(kv, body);
+}
+
+// ========== 保存配置 ==========
+async function saveConfig(kv, body) {
+  const { config, newPassword } = body;
   try {
     if (typeof config !== 'object') throw new Error('config must be an object');
     await kv.put('homepage_config', JSON.stringify(config));
 
-    // 同时修改密码
-    if (body.newPassword) {
-      const encoder = new TextEncoder();
-      const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(body.newPassword));
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const newHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    if (newPassword) {
+      const newHash = await sha256(newPassword);
       await kv.put('config_password', newHash);
     }
 
     return jsonResponse({ success: true });
   } catch (e) {
-    return jsonResponse({ error: 'SAVE_FAILED', message: e.message }, 500);
+    return jsonResponse({ success: false, error: 'SAVE_FAILED', message: e.message });
   }
 }
 
@@ -106,17 +119,15 @@ export async function onRequestPut(context) {
     return jsonResponse({ error: 'BOTH_PASSWORDS_REQUIRED' }, 400);
   }
 
-  const valid = await verifyPassword(kv, oldPassword);
-  if (!valid) {
+  // 验证旧密码
+  const storedHash = (await kv.get('config_password') || '').trim();
+  const oldHash = await sha256(oldPassword);
+  if (oldHash !== storedHash) {
     return jsonResponse({ error: 'INVALID_OLD_PASSWORD' }, 401);
   }
 
   // 计算新密码 hash 并保存
-  const encoder = new TextEncoder();
-  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(newPassword));
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const newHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
+  const newHash = await sha256(newPassword);
   await kv.put('config_password', newHash);
   return jsonResponse({ success: true });
 }
@@ -146,20 +157,11 @@ function jsonResponse(data, status = 200) {
   });
 }
 
-async function verifyPassword(kv, password) {
-  const storedHash = await kv.get('config_password');
-  if (!storedHash) {
-    // 首次使用：如果 KV 里没有密码，默认 "admin123" 可通过验证
-    // 强烈建议部署后立即修改密码
-    return password === 'admin123';
-  }
-
+async function sha256(str) {
   const encoder = new TextEncoder();
-  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(password));
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(str));
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const inputHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-  return inputHash === storedHash;
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 function getDefaultConfig() {
